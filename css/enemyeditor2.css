@@ -1,0 +1,141 @@
+div.ee_table_flex {
+    display: flex;
+}
+
+div#ee_table_base table {
+    table-layout: fixed;
+    width: auto;
+}
+
+div[id^="ee_table_"] table caption {
+    font-weight:bold;
+    text-align: left;
+}
+
+td.ee_st_label {
+    width: 6.5em;
+    font-weight: bold;
+    text-align: right;
+    vertical-align: middle;
+}
+
+td.ee_st_box {
+    width: 5em;
+}
+
+div.flex_kind {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+div.flex_kind input[type="checkbox"] {
+    margin-right: 0.5em;
+}
+
+div.flex_kind label {
+    margin-right: 0.5em;
+}
+
+div#tabmenu {
+    position: sticky;
+    top: 0;
+}
+
+div#tabmenu div.tab_child {
+    margin: 1em 0;
+    display: flex;
+}
+
+div.tabmenu_button {
+    padding: 0.25em 0.75em;
+    margin-left: 0.5em;
+}
+
+div[id^="tab_"] {
+    display: none;
+    margin: 0 2em;
+}
+
+div[id^="ee_table_"] {
+    margin-top: 1em;
+}
+
+input[type="checkbox"] {
+    vertical-align: middle;
+}
+
+input[type="number"] {
+    text-align: right;
+}
+
+div.tab_selected {
+    font-weight: bold;
+}
+
+button.manuever_arts {
+    text-align: center;
+    vertical-align: middle;
+    width: 2.5em;
+    height: 2.5em;
+}
+
+button.manuever_stats {
+    text-align: center;
+    width: 2em;
+    height: 2em;
+    padding: 0;
+}
+
+.colorpick {
+    padding: 1.25em;
+    margin: 0.25em;
+}
+
+.row3 {
+    height: 3em;
+    line-height: 1.25em;
+}
+
+input.row3[type="number"] {
+    height: 3em;
+    width: 4em;
+}
+
+.row2 {
+    height: 2em;
+}
+
+.ee-title {
+    font-weight: bold;
+    margin: 2em 0 1em 0;
+    padding-left: 0.5em;
+}
+
+@media screen {
+    #ee2_file_reader, #ee2_image_reader, #ee2_old_file_reader {
+        display: none;
+    }
+}
+
+[v-cloak] {
+    display: none;
+}
+
+span.p_menu {
+    width: 12em;
+    height: 2em;
+}
+
+div.darts_style label {
+    margin: 0.5em;
+}
+
+div.bottom_menu {
+    position: sticky;
+    bottom: 0;
+    background-color: rgb(255,255,255);
+}
+
+p.history_switch {
+    cursor: pointer;
+}

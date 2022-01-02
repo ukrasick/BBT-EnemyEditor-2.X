@@ -1,0 +1,987 @@
+<html>
+    <head>
+        <!-- 基本的なヘッダ情報 -->
+        <meta charset="UTF-8">
+        <title>Enemy Editor 2 for BBT - BBTセッション準備支援ツール</title>
+        <!-- ここまで -->
+
+        <!-- OGPタグの設定 -->
+  		    <meta property="og:url" content="http://niltheria.daynight.jp/bbt/tools/index.html" />
+            <meta property="og:title" content="BBT セッション準備支援ツール" />
+            <meta property="og:description" content="「ビーストバインドトリニティ」用の、主にオンラインセッションの準備を簡略化するためのwebツール集。" />
+            <meta property="og:image" content="http://niltheria.daynight.jp/sitelogo_summary.png" />
+            <meta property="og:type" content="article" />
+            <meta property="og:site_name" content="NiLtheria" />
+            <meta property="og:locale" content="ja_JP" />
+            <meta name="twitter:card" content="summary" />
+            <meta name="twitter:site" content="@u_krasaka" />
+        <!-- ここまで -->
+
+        <!-- CSSファイルの設定 -->
+            <link href="css/w3.css" rel="stylesheet" type="text/css">
+            <link href="css/enemyeditor2.css" rel="stylesheet" type="text/css">
+        <!-- ここまで -->
+    </head>
+    <body>
+        <!-- タブボタン -->
+        <div id="tabmenu" class="w3-white">
+            <div class="w3-container w3-indigo" style="display:block;">
+                <h3>Enemy Editor 2 for BEASTBIND TRINITY</h3>
+                <p class="w3-small">Enemy Editorは、エネミーデータの入力とコマの作成を、キャラクターシート倉庫に近いフォームで行うための準備支援ツールです。</p>
+            </div>
+            <div class="tab_child w3-border-bottom">
+                <div v-once v-for="t in tabdata" :key="t" :id="'menu_' + t" @click="tab_select(t)" v-cloak>
+                    <a href="#" style="text-decoration: none;">{{ tabname[t] }}</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enemy Editor Section 1: エネミー基本情報 -->
+        <div id="tab_data_input">
+
+            <!-- データロード -->
+            <div id="ee_data_load">
+                <form name="form_data_load">
+                    <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                        JSONファイルからデータを読み込む
+                    </div>
+                    <label style="margin: 0 2em;">
+                        <div class="w3-button w3-indigo w3-hover-blue">
+                            ファイルを選択
+                        </div>
+                        <input type="file" @change="load_json" id="ee2_file_reader">
+                    </label>
+                    <span style="margin-left:1em;" v-if="message">※{{message}}</span>
+                </form>
+                <div class="w3-panel w3-border w3-padding-4 w3-round w3-small" style="margin: 0 2em;">
+                    <p>
+                        ※読み込むファイルは、原則として「Enemy Editor 2 for BBT」で作成したJSONファイルである必要があります。（条件を満たすファイルは読み込むこと自体は可能です）
+                    </p>
+                </div>
+            </div>
+
+            <!-- エネミー基本情報テーブル -->
+            <div id="ee_table_base">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    エネミー基本情報
+                </div>
+                <div class="ee_table_flex">
+                    <form name="enemy_base_info" style="margin-right: 2em;">
+                        <table class="w3-table w3-border w3-border-black w3-small">
+                            <caption>■名称、種別などの基礎情報</caption>
+                            <tr>
+                                <td class="w3-black ee_st_label">名称</td>
+                                <td><input type="text" v-model="base_info.name" style="width: 25em;"></td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">外見</td>
+                                <td><input type="text" v-model="base_info.appearance" style="width: 25em;"></td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">種別</td>
+                                <td>
+                                    <div class="flex_kind" style="width: 25em;">
+                                        <label v-for="k in kind"><input type="checkbox" v-model="base_info.checked_kinds" :value="k">{{k}}</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">区分</td>
+                                <td>
+                                    <div class="flex_kind" style="width: 16em;">
+                                        <label v-for="k in category"><input type="checkbox" v-model="base_info.checked_categories" :value="k">{{k}}</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">備考</td>
+                                <td><textarea cols="40" rows="5" v-model="base_info.note"></textarea></td>
+                            </tr>
+                        </table>
+                    </form>
+                    <form name="enemy_base_status" style="margin-right: 2em;">
+                        <table class="w3-table w3-border w3-border-black w3-small">
+                            <caption>
+                                ■基本能力値
+                            </caption>
+                            <tr class="w3-black">
+                                <td class="ee_st_label"></td>
+                                <td v-for="abl in baseabl" style="font-weight:bold; text-align:center;">{{abl}}</td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">能力値</td>
+                                <td v-for="abl in baseabl" class="ee_st_box">
+                                    <input type="number" min="0" v-model.number="base_params.abl[abl]" style="width: 4em;">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">判定修正</td>
+                                <td v-for="abl in baseabl" class="ee_st_box">
+                                    <input type="number" v-model.number="base_params.mod[abl]" style="width: 4em;">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">ｱｰﾏｰ修正</td>
+                                <td v-for="abl in baseabl" class="ee_st_box">
+                                    <input type="number" v-model.number="base_params.amr[abl]" style="width: 4em;">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">耐性</td>
+                                <td v-for="abl in baseabl" class="ee_st_box" style="text-align:center; vertical-align:middle;">
+                                    <select v-model.number="base_params.edr[abl]" style="text-align:center;">
+                                        <option value="1">なし</option>
+                                        <option value="0">弱点</option>
+                                        <option value="2">耐性</option>
+                                        <option value="10">不壊</option>
+                                        <option value="4">4倍</option>
+                                        <option value="20">20倍</option>
+                                        <option value="40">40倍</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                    <form name="enemy_base_battle">
+                        <table class="w3-table w3-border w3-border-black w3-small">
+                            <caption>■戦闘能力値など</caption>
+                            <tr class="w3-black">
+                                <td class="ee_st_label"></td>
+                                <td v-for="abl in battleabl" class="ee_st_box" style="font-weight:bold; text-align:center;">{{abl}}</td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">能力値</td>
+                                <td v-for="abl in battleabl" class="ee_st_box">
+                                    <input type="number" min="0" v-model.number="battle_params.abl[abl]" style="width: 4em;">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label">判定修正</td>
+                                <td v-for="abl in battleabl" class="ee_st_box">
+                                    <input type="number" v-model.number="battle_params.mod[abl]" style="width: 4em;">
+                                </td>
+                            </tr>
+                            <tr class="w3-black">
+                                <td class="ee_st_label"></td>
+                                <td v-for="abl in otherabl" class="w3-black ee_st_box" style="font-weight:bold; text-align:center;">{{abl}}</td>
+                            </tr>
+                            <tr>
+                                <td class="w3-black ee_st_label"></td>
+                                <td v-for="abl in otherabl" class="ee_st_box">
+                                    <input type="number" min="0" v-model.number="battle_params.otr[abl]" style="width: 4em;">
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                </div>
+                <div class="w3-container w3-border w3-round w3-small" style="margin:0 2em;">
+                    <ul>
+                        <li><strong>基本能力値表について</strong>
+                            <ul>
+                                <li>
+                                    「アーマー修正」欄は、その属性に固有の修正のみ記入してください。（《属性耐性II》や《幽体》など、属性固有の固定値修正を想定）<br>
+                                    【能力値B】のアーマー値は、チャットパレットやキャラクター駒データ作成時に反映します。
+                                </li>
+                                <li>
+                                    「耐性」欄は、最終アーマー値を次のように変動させます。→
+                                    <strong class="w3-text-red">【弱点】</strong>アーマー値0、<strong class="w3-text-red">【耐性】</strong>アーマー値2倍、<strong class="w3-text-red">【不壊】</strong>アーマー値10倍<br>
+                                    <span class="w3-text-grey">GMであるあなたが《属性耐性》《非実体》《世界律：不壊》等が重複すると判断した場合は、「4倍」「20倍」「40倍」を適宜選択してください。</span>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><strong>戦闘能力値表について</strong>
+                            <ul>
+                                <li>「アーマー」欄は、【能力値B】やアーツの効果等を除く、基礎のアーマー値を記入してください。（PCで言うところの防具のアーマー値に相当します）</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!--ドミニオンアーツ関連データテーブル-->
+            <div id="ee_table_d_arts" class="w3-small">
+                <div class="w3-leftbar w3-border-bottom w3-border-purple w3-medium ee-title">
+                    ドミニオンアーツ一覧
+                </div>
+                <table class="w3-border-deep-purple w3-small" border="1" style="padding:0; border-collapse: collapse;">
+                    <tr class="w3-deep-purple" style="font-weight: bold;">
+                        <td v-for="t in dataheader" :style="{'padding': '0 0.5em', 'text-align': header_align(t)}">{{ t }}</td>
+                        <td style="text-align:center;">操作</td>
+                    </tr>
+                    <tr v-for="(i, index) in items" :key="index" :name="index" style="vertical-align:middle;">
+                        <td><textarea class="row3" cols="14" v-model="items[index].name"></textarea></td>
+                        <td><textarea class="row3" cols="7" v-model="items[index].kind"></textarea></td>
+                        <td><input type="number" class="row3" min="0" v-model.number="items[index].level"></td>
+                        <td><textarea class="row3" cols="8" v-model="items[index].timing"></textarea></td>
+                        <td><textarea class="row3" cols="8" v-model="items[index].judge"></textarea></td>
+                        <td><textarea class="row3" cols="4" v-model="items[index].tgt"></textarea></td>
+                        <td><textarea class="row3" cols="4" v-model="items[index].range"></textarea></td>
+                        <td><textarea class="row3" cols="40"v-model="items[index].note"></textarea></td>
+                        <td style="text-align:center;">
+                            <select v-model="items[index].disptype" class="row3">
+                                <option value="表示">表示</option>
+                                <option value="省略">省略</option>
+                                <option value="隠蔽">隠蔽</option>
+                                <option value="消去">消去</option>
+                            </select>
+                        </td>
+                        <td style="text-align:center;">
+                            <button @click="upward" class="manuever_arts" :disabled="index == 0">∧</button>
+                            <button @click="downward" class="manuever_arts" :disabled="index == items.length-1">∨</button>
+                            <button @click="delete_line" class="manuever_arts">×</button>
+                        </td>
+                    </tr>
+                    <!-- 最終行でレベルを合算 -->
+                    <tr class="w3-purple w3-topbar w3-bottombar w3-border-deep-purple">
+                        <td colspan="10" style="font-weight:bold; padding: 0.3em 1em;">ドミニオンアーツ合計LV：【 {{level_amount}} 】</td>
+                    </tr>
+                </table>
+
+                <button @click="new_line" class="w3-button w3-indigo w3-hover-blue w3-padding-4 w3-round" style="font-weight:bold; margin: 1em 0 0 1em;">
+                    空行を追加
+                </button>
+
+                <div class="w3-container" style="margin: 0 1em">
+                    <div style="vertical-align: middle;">
+                        <div class="w3-panel w3-border w3-padding-16 w3-round w3-border-deep-purple">
+                            <div class="w3-leftbar w3-border-bottom w3-border-deep-purple"
+                                style="padding-left: 0.5em; padding-top: 0.5em; margin-bottom: 1em; font-weight:bold;">
+                                ドミニオンアーツ一覧から引用
+                            </div>
+                            <div style="margin-left: 1em;">
+                                <span style="margin-right: 0.5em;">掲載書籍</span>
+                                <select v-model="select_dart_book" style="height:2.5em; padding:0 1em; margin-right: 1em;" @change="change_dart_list">
+                                    <option v-for="d in darts_book" :key="d" :value="d">{{d}}</option>
+                                </select>
+                                <span style="margin-right: 0.5em;">カテゴリ</span>
+                                <select v-model="select_dart_category" style="height:2.5em; width: 7em; padding:0 1em; margin-right: 1em;" @change="change_dart_list">
+                                    <option v-for="d in dart_book_category()" :key="d" :value="d">{{d}}</option>
+                                </select>
+                                <span style="margin-right: 0.5em;">アーツ名</span>
+                                <select v-model="select_dart_list" style="width: 16em; height:2.5em; padding:0 0.5em; margin-right: 1em;">
+                                    <option v-for="d in darts_list" :value="d" :key="d">{{d}}</option>
+                                </select>
+                                <span style="font-weight:bold;">LV </span>
+                                <input type="number" min="1" max="10" v-model.number="dart_level" style="width:4em; height: 2.5em; margin-right: 1em;">
+                                <span style="font-weight:bold;">LV表示 </span>
+                                <select v-model="dart_level_disp" style="height: 2.5em; width: 5em; padding: 0 0.5em;">
+                                    <option value="表示">表示</option>
+                                    <option value="省略">省略</option>
+                                    <option value="隠蔽">隠蔽</option>
+                                    <option value="消去">消去</option>
+                                </select>
+                                <button @click="add_darts" class="w3-button w3-deep-purple w3-hover-purple w3-round w3-padding-4" style="margin-left: 1em;" :disabled="allow_dart">
+                                    左記《世界律》の名前を追加
+                                </button>
+                            </div>
+                            <div style="margin: 1em 1em 1em 0;">
+                                ※このリストから追加する場合、最大LVを超えて入力されることはありません。<br>（何らかの事情でどうしても《絶望》LV6以上などにしたい場合は、追加した後に手動で変更してください）
+                            </div>
+                        </div>
+                        <div class="w3-panel w3-border w3-padding-4 w3-round">
+                            <p>
+                                ※「LV表示」欄は、チャットパレット上でアーツLVを「表示」するか、「省略」するか、「隠蔽」する（<strong>LV??</strong>表記）かを選びます。（「隠蔽」を選んだものは別途リストが作られます）<br>
+                                　「消去」の場合、その行をチャットパレットに反映しません。戦闘で使用しない災厄級ドミニオンアーツを入れたくない場合などに選んでください。<br>
+                                ※「ドミニオンアーツ合計LV」は、この欄に入力されているすべてのアーツLVを合計したものが表示されます。<strong class="w3-text-red">（ただし、種別欄に「Dエゴ」と記入された行は、レベルを2倍にして計算します）</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--アーツ、アイテム関連データテーブル-->
+            <div id="ee_table_arts" class="w3-small">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    アーツ＆アイテムデータ
+                </div>
+                <table class="w3-border-black w3-small" border="1" style="padding:0; border-collapse: collapse;">
+                    <tr class="w3-black" style="font-weight: bold;">
+                        <td v-for="t in dataheader" :style="{'padding': '0 0.5em', 'text-align': header_align(t)}">{{ t }}</td>
+                        <td style="text-align:center;">操作</td>
+                    </tr>
+                    <tr v-for="(i, index) in items" :key="index" :name="index" style="vertical-align:middle;">
+                        <td><textarea class="row3" cols="14" v-model="items[index].name"></textarea></td>
+                        <td><textarea class="row3" cols="7" v-model="items[index].kind"></textarea></td>
+                        <td><input type="number" min="0" class="row3" v-model.number="items[index].level"></td>
+                        <td><textarea class="row3" cols="8" v-model="items[index].timing"></textarea></td>
+                        <td><textarea class="row3" cols="8" v-model="items[index].judge"></textarea></td>
+                        <td><textarea class="row3" cols="4" v-model="items[index].tgt"></textarea></td>
+                        <td><textarea class="row3" cols="4" v-model="items[index].range"></textarea></td>
+                        <td><textarea class="row3" cols="40"v-model="items[index].note"></textarea></td>
+                        <td style="text-align:center;">
+                            <select v-model="items[index].disptype" class="row3">
+                                <option value="表示">表示</option>
+                                <option value="省略">省略</option>
+                                <option value="隠蔽">隠蔽</option>
+                                <option value="アイテム">ｱｲﾃﾑ</option>
+                                <option value="消去">消去</option>
+                            </select>
+                        </td>
+                        <td style="text-align:center;">
+                            <button @click="upward" class="manuever_arts" :disabled="index == 0">∧</button>
+                            <button @click="downward" class="manuever_arts" :disabled="index == items.length-1">∨</button>
+                            <button @click="delete_line" class="manuever_arts" :disabled="items.length < 2">×</button>
+                        </td>
+                    </tr>
+                </table>
+
+                <button @click="new_line" class="w3-button w3-indigo w3-hover-blue w3-padding-4 w3-round" style="font-weight:bold; margin: 1em 0 0 1em;">
+                    空行を追加
+                </button>
+
+                <div class="w3-container" style="margin: 0 1em">
+                    <div style="vertical-align: middle;">
+                        <div class="w3-panel w3-border w3-padding-8 w3-round">
+                            ※「LV表示」欄は、チャットパレット上でアーツLVを「表示」するか、「省略」するか、「隠蔽」する（<strong>LV??</strong>表記）かを選びます。（「隠蔽」を選んだものは別途リストが作られます）<br>
+                            　アイテム扱いのものは「アイテム」を選択してください。「消去」を選択すると、設定に関わらずチャットパレットにその行が組み込まれなくなります。<br>
+                            ※「判定値」欄に判定に使えそうな式が記入されている場合、判定一覧に引用します。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--ダメージロール関連テーブル-->
+            <div id="ee_table_damagerolls" class="w3-small">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    ダメージロール＆攻撃手段一覧
+                </div>
+                <table class="w3-border-black w3-small" border="1" style="padding:0; border-collapse: collapse;">
+                    <tr class="w3-black" style="font-weight: bold;">
+                        <td v-for="t in dataheader" :style="{'padding': '0 0.5em', 'text-align': header_align(t)}">{{ t }}</td>
+                        <td style="text-align:center;">操作</td>
+                    </tr>
+                    <tr v-for="(i, index) in items" :key="index" :name="index" style="vertical-align:middle;">
+                        <td><textarea class="row3" cols="14" v-model="items[index].name"></textarea></td>
+                        <td><textarea class="row3" cols="7" v-model="items[index].kind"></textarea></td>
+                        <td><textarea class="row3" cols="7" v-model="items[index].hit"></textarea></td>
+                        <td>
+                            <select class="row3" v-model="items[index].attribute">
+                                <option value="肉体">肉体</option>
+                                <option value="技術">技術</option>
+                                <option value="感情">感情</option>
+                                <option value="加護">加護</option>
+                                <option value="社会">社会</option>
+                                <option value="なし">なし</option>
+                            </select>
+                        </td>
+                        <td><textarea class="row3" cols="14" v-model="items[index].damage"></textarea></td>
+                        <td><textarea class="row3" cols="4" v-model="items[index].tgt"></textarea></td>
+                        <td><textarea class="row3" cols="4" v-model="items[index].range"></textarea></td>
+                        <td><textarea class="row3" cols="40" v-model="items[index].note"></textarea></td>
+                        <td style="text-align:center;"><input type="checkbox" v-model="items[index].disp"></td>
+                        <td style="text-align:center;">
+                            <button @click="upward" class="manuever_arts" :disabled="index == 0">∧</button>
+                            <button @click="downward" class="manuever_arts" :disabled="index == items.length-1">∨</button>
+                            <button @click="delete_line" class="manuever_arts" :disabled="items.length < 2">×</button>
+                        </td>
+                    </tr>
+                </table>
+
+                <button @click="new_line" class="w3-button w3-indigo w3-hover-blue w3-padding-4 w3-round" style="font-weight:bold; margin: 1em 0 0 1em;">
+                    空行を追加
+                </button>
+
+                <div class="w3-container" style="margin: 0 1em;">
+                    <div style="vertical-align: middle;">
+                        <div class="w3-panel w3-border w3-padding-8 w3-round">
+                            ※「表示」欄にチェックを入れたものは、チャットパレット出力時にメジャーアクションの行動として出力されます。<br>
+                            ※「表示」にチェックが入っていて、「命中」欄に判定に使えそうな式が記入されている場合、判定一覧に引用します。<br>
+                            　正負の符号から始まる場合、「種別」欄から白兵攻撃か射撃攻撃かを判別して式を作成します。種別欄には「白兵」や「射撃」の文字を含めてください。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--データ保存関係-->
+            <div id="ee_data_save">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    JSONファイルの保存
+                </div>
+                <div style="vertical-align:middle;" class="w3-panel w3-small">
+                    <div>
+                        <button @click="download_json" class="w3-button w3-indigo w3-hover-blue w3-round" style="font-weight:bold;">
+                            ファイルの保存
+                        </button>
+                        <p>
+                            ※エネミーの「名称」が入力されていればその名称を、空欄であれば「EnemyEditor2.json」が基本のファイル名になります。適宜変更してください。<br>
+                            ※Enemy Editor 2のデータはJSONファイルとして保存されますが、このままではココフォリアのClipboard APIには対応しません。「チャットパレット」「ココフォリア駒出力」に進み、データを作成してください。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enemy Editor Section: チャットパレットの出力 -->
+        <div id="tab_chatpalette">
+            <div id="ee_chatpalette">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    チャットパレットの出力設定
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        使用オンラインセッションツールの指定
+                    </div>
+                    <select v-model="system" style="margin-top:1em; margin-left:1em; padding:0.5em 1em;" class="row3">
+                        <option value="ユドナリウム">ユドナリウム</option>
+                        <option value="ココフォリア">ココフォリア</option>
+                        <option value="Tekey">Tekey</option>
+                        <option value="Quoridorn">Quoridorn</option>
+                        <option value="TRPGスタジオ">TRPGスタジオ</option>
+                        <option value="なし">なし</option>
+                    </select>
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        エネミー基本情報の出力設定
+                    </div>
+                    <div style="margin-left:1em; margin-top:1em;">
+                        <label><input type="checkbox" v-model="outputs" value="base_info" style="margin-right:0.5em;">エネミー基本情報を出力する</label>
+                    </div>
+                    <p v-if="check_base_info" class="w3-small">以下の情報から、チャットパレットの最初に書き下したいものにチェックを入れてください。<br>※各種能力値・アーマー値・ガード値は情報としてチャットパレットか駒データに別途入れ込まれます。</p>
+                    <div class="flex_kind w3-small" style="width: 50em; margin-left: 2em;" v-if="check_base_info">
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="基本能力値">基本能力値</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="戦闘能力値">戦闘能力値</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="アーマー値">アーマー値</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="ガード値">ガード値</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="種別">種別</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="FP最大値">FP最大値</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="エネミーレベル">エネミーレベル</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="外見的特徴">外見的特徴</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_base_info" value="ドミニオンアーツ数">ドミニオンアーツ数</label></span>
+                    </div>
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        一般的な行動宣言の出力設定
+                    </div>
+                    <div style="margin-left:1em; margin-top:1em;">
+                        <label><input type="checkbox" v-model="outputs" value="general_action" style="margin-right:0.5em;">「一般的な行動」の候補を出力する</label>
+                    </div>
+                    <p v-if="check_general_action" class="w3-small">
+                        以下の情報から、チャットパレットに書き下したいものにチェックを入れてください。<br>
+                        この他に、「ダメージロール＆攻撃手段一覧」で【表示】にチェックを入れたものが、「一般的な行動宣言」として出力されます。（対象の表示はアーツの表示設定に準じます）
+                    </p>
+                    <div class="flex_kind w3-small" style="width: 40em; margin-left: 2em;" v-if="check_general_action">
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_general_action" value="通常移動">ムーブ - 通常移動</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_general_action" value="離脱移動">メジャー - 離脱移動</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_general_action" value="ドッジ">ドッジ</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_general_action" value="ガード">ガード（ガード値n）</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_general_action" value="リアクション不可">リアクション不可</label></span>
+                        <span class="p_menu"><label><input type="checkbox" v-model="output_general_action" value="アクションなし">アクションなし</label></span>
+                    </div>
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        アーツの出力設定
+                    </div>
+                    <div style="margin-left:1em; margin-top:1em;">
+                        <label><input type="checkbox" v-model="outputs" value="arts" style="margin-right:0.5em;">アーツの一覧を出力する</label>
+                    </div>
+                    <p v-if="check_arts" class="w3-small">
+                        データのうち、以下のものは出力しないことを選べます。出力したくないものはチェックを外してください。
+                    </p>
+                    <div class="w3-small flex_kind" style="width: 25em; margin-left: 2em;" v-if="check_arts">
+                        <span style="height:2em;"><label><input type="checkbox" v-model="output_arts" value="タイミング空欄">「タイミング」が空欄のアーツも出力する</label></span>
+                        <span style="height:2em;"><label><input type="checkbox" v-model="output_arts" value="タイミング常時">「タイミング：常時」のアーツも出力する</label></span>
+                        <span style="height:2em;"><label><input type="checkbox" v-model="output_arts" value="効果">「効果」欄の内容も出力する</label></span>
+                        <span style="height:2em;"><label><input type="checkbox" v-model="output_arts" value="対象射程">アーツの「対象」「射程」を表示する</label></span>
+                        <span style="height:2em;"><label>└- <input type="checkbox" v-model="output_arts" value="自身省略">「対象：自身」の場合、対象・射程を省略する</label></span>
+                        <span style="height:2em;"><label>└- <input type="checkbox" v-model="output_arts" value="対象簡易">対象・射程を簡略表示する →例〔単体／至近〕</label></span>
+                    </div>
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        ダメージロール関連の出力設定
+                    </div>
+                    <div style="margin-left:1em; margin-top:1em;">
+                        <label><input type="checkbox" v-model="outputs" value="damage" style="margin-right:0.5em;">ダメージロールの一覧を出力する</label>
+                    </div>
+                    <p v-if="check_damage" class="w3-small">
+                        ダメージ関連のチャットパレットで、出力したいものにチェックを入れてください。<br>
+                        「ダメージ計算」行は、各属性のアーマー値を入れ込み、与ダメージ量を入れたら実ダメージを計算できるように調整した行となります。
+                    </p>
+                    <div class="w3-small flex_kind" style="width: 40em; margin-left: 2em;" v-if="check_damage">
+                        <span style="height:2em;"><label><input type="checkbox" v-model="output_damage" value="効果">「効果・備考」欄もすべて出力する</label></span>
+                        <span style="height:2em;"><label><input type="checkbox" v-model="output_damage" value="計算">被ダメージ時の計算に使える「c(計算式) ダメージ計算〈属性〉」行を作る</label></span>
+                    </div>
+                </div>
+                <div class="w3-panel w3-padding-16 w3-border w3-topbar w3-border-indigo bottom_menu" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        チャットパレットの出力
+                    </div>
+                    <div class="w3-container w3-padding-16 w3-small">
+                        <button class="w3-button w3-button w3-indigo w3-hover-blue w3-round w3-padding-8" style="margin-left:1em;" @click="generate_palette">
+                            チャットパレットを出力する
+                        </button>
+                        <button class="clipboard_button w3-button w3-teal w3-hover-green w3-round w3-padding-8" data-clipboard-target="#chatpalette_api_output" :disabled="!result" style="margin-left: 2em;">
+                            出力したチャットパレットをコピーする
+                        </button>
+                        <button class="clipboard_button w3-button w3-dark-grey w3-hover-light-grey w3-round w3-padding-8" @click="result=''" :disabled="!result" style="margin-left: 2em;">
+                            出力データのリセット
+                        </button>
+                        <div v-if="check_result">
+                            <hr noshade class="w3-border-grey">
+                            <div>
+                                <p>
+                                    ※内容を確認し、下のテキストエリアでチャットパレットに必要な修正を施したうえで、「駒出力」タブに進んでください。
+                                </p>
+                                <form name="ee2_chatpalette">
+                                    <textarea v-model="result" name="area" cols="100" rows="25" id="chatpalette_api_output"></textarea>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enemy Editor Section 3: ユドナリウムキャラクター駒の作成 -->
+        <div id="tab_udonarium">
+            <div id="ee_udonarium_generator">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    Udonarium キャラクター駒作成機
+                </div>
+                <div class="w3-container" style="margin: 1em;">
+                    本機能で作成したzipファイルを、Udonariumのウィンドウにドラッグ＆ドロップすることで、駒を作成できます。
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        基本ステータス出力の設定
+                    </div>
+                    <div class="w3-small">
+                        <p>
+                            駒データにひも付ける「ステータス」を設定します。<br>
+                            なお、これとは別途、各種【能力値】と各属性のアーマー値が駒データに紐付けられます。
+                        </p>
+                        <div class="w3-container w3-padding-8">
+                            <div>
+                                <p style="vertical-align: middle;">
+                                    <span style="margin-right: 1em; font-weight: bold;">駒のサイズを設定</span>
+                                    <input type="number" v-model.number="pone_size" min="1" style="width: 4em;">
+                                </p>
+                                <p style="vertical-align: middle;">
+                                    <label><input type="checkbox" v-model="output_base_info" value="FP表示">【FP】を転記する</label>
+                                    <strong>→表示形式：</strong>
+                                    <label style="margin-right:1em;"><input type="radio" v-model="output_fp" value="FP最大">最大値も登録</label>
+                                    <label style="margin-right:1em;"><input type="radio" v-model="output_fp" value="FPゼロ">ゼロから加算</label>
+                                </p>
+                                <div class="flex_kind" style="width: 45em;">
+                                    <label><input type="checkbox" v-model="output_base_info" value="種別">種別</label>
+                                    <label><input type="checkbox" v-model="output_base_info" value="区分">区分</label>
+                                    <label><input type="checkbox" v-model="output_base_info" value="備考">備考</label>
+                                    <label><input type="checkbox" v-model="output_base_info" value="チャットパレット">チャットパレット</label>
+                                    <span style="margin-left: 1em;">を転記</span>
+                                </div>
+                                <div class="w3-panel w3-pale-blue w3-leftbar w3-border-blue w3-padding-8" v-if="palette_generated" style="font-weight:bold;">
+                                    チャットパレットは出力済みです。<br>
+                                    内容は、「チャットパレット」タブで編集してください。
+                                </div>
+                                <div class="w3-panel w3-pale-red w3-leftbar w3-border-red w3-padding-8" v-else style="font-weight:bold;">
+                                    チャットパレットが出力されていません。<br>
+                                    チャットパレットを組み込む場合は、先に「チャットパレット」タブで出力を行ってください。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em; margin-top: 1em;">
+                        その他のステータスの設定
+                    </div>
+                    <div class="w3-small">
+                        <p>
+                            上記以外の、キャラクター駒に紐付けるステータスを設定します。<br>
+                            「最大値0」のものは「通常」、そうでないものは「リソース」として割り当てられます。
+                        </p>
+                        <div class="w3-container w3-padding-8">
+                            <table class="w3-small" border="1" style="padding:0; border-collapse: collapse; margin-bottom:1em;">
+                                <tr class="w3-teal" style="font-weight: bold; text-align: center;">
+                                    <td>名称</td>
+                                    <td>現在値</td>
+                                    <td>最大値</td>
+                                    <td>操作</td>
+                                </tr>
+                                <tr v-for="(i, index) in other_status">
+                                    <td><input type="text" v-model="other_status[index].label" style="width: 6em;"></td>
+                                    <td><input type="number" v-model.number="other_status[index].value" style="width: 6em;"></td>
+                                    <td><input type="number" v-model.number="other_status[index].max" style="width: 6em;"></td>
+                                    <td style="text-align:center;">
+                                        <button @click="upward" class="manuever_stats" :disabled="index == 0">∧</button>
+                                        <button @click="downward" class="manuever_stats" :disabled="index == other_status.length-1">∨</button>
+                                        <button @click="delete_line" class="manuever_stats">×</button>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="vertical-align: middle;">
+                                <button class="w3-button w3-indigo w3-hover-blue" @click="status_new_line" style="margin-right:1.5em;">
+                                    空行を増やす
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo w3-medium" style="font-weight: bold; padding: 0 10em 0 0.5em; margin: 0 2em 1em 0;">
+                        駒画像の設定
+                    </div>
+                    <div class="w3-small w3-container">
+                        <div class="w3-container" style="display: flex;">
+                            <div>
+                                <div class="w3-container" style="text-align: center;">
+                                    <!-- 画像選択 -->
+                                    <form name="form_image_load">
+                                        <label>
+                                            <div class="w3-button w3-indigo w3-hover-blue" style="width: 20em;">
+                                                ファイルを選択
+                                            </div>
+                                            <input type="file" @change="load_image" id="ee2_image_reader">
+                                        </label>
+                                    </form>
+                                    <button class="w3-button w3-teal w3-hover-green" @click="revoke_image" :disabled="!image" style="width: 20em;">
+                                        画像をリセット
+                                    </button>
+                                    <div class="w3-panel w3-border w3-round w3-border-red w3-padding-8" style="font-weight:bold; width: 20em; margin: 1em 2em 0 2em; text-align: left;">
+                                        ※各設置サイトの利用規約をよく確認し、それに反する画像は使用しないでください。
+                                    </div>
+                                    <span style="margin-left:1em;" v-if="message">※{{message}}</span>
+                                </div>
+                            </div>
+                            <div class="w3-container w3-border w3-round-large" id="ee2_udona_pone_image" style="padding: 2em; vertical-align: middle;">
+                                <!-- 画像の掲載場所 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w3-panel w3-padding-16 w3-border w3-topbar w3-border-indigo bottom_menu" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        駒データの出力
+                    </div>
+                    <div class="w3-container w3-padding-16 w3-small">
+                        <button class="w3-button w3-indigo w3-hover-blue w3-round" @click="generate_data()" style="margin-left:1em;">
+                            駒データを出力する
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enemy Editor Section 4: ココフォリア Clipboard APIによる駒作成 -->
+        <div id="tab_ccfolia">
+            <div id="ee_ccfolia_api">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    ココフォリア Clipboard APIによる駒データ出力
+                </div>
+                <div class="w3-container" style="margin: 1em;">
+                    ココフォリア "Clipboard API" は、ココフォリアが公式に提供している、外部で作成した駒データを取り込むための方法です。<br>
+                    本機能で出力したテキストをコピーし、ココフォリアの部屋で「右クリック」→「貼り付け」することで、駒データが作成されます。
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        ステータスの設定
+                    </div>
+                    <div class="w3-small">
+                        <p>
+                            駒データにひも付ける「ステータス」を設定します。「最大値」が0のステータスは、現在値のみが表示されます。<br>
+                            綺麗に収まる文字数は「ラベル」「現在値」「最大値」あわせて半角10文字分程度と思われます。
+                        </p>
+                        <p>
+                            <strong class="w3-text-red" style="padding: 0.5em 0;">※同じラベルのステータスが複数ある場合、一番上のものだけを採用します。</strong>
+                        </p>
+                        <div class="w3-container w3-padding-8">
+                            <table class="w3-small" border="1" style="padding:0; border-collapse: collapse; margin-bottom:1em;">
+                                <tr class="w3-teal" style="font-weight: bold; text-align: center;">
+                                    <td>ラベル</td>
+                                    <td>現在値</td>
+                                    <td>最大値</td>
+                                    <td>操作</td>
+                                </tr>
+                                <tr v-for="(i, index) in other_status">
+                                    <td><input type="text" v-model="other_status[index].label" style="width: 6em;"></td>
+                                    <td><input type="number" v-model.number="other_status[index].value" style="width: 6em;"></td>
+                                    <td><input type="number" v-model.number="other_status[index].max" style="width: 6em;"></td>
+                                    <td style="text-align:center;">
+                                        <button @click="status_upward" class="manuever_stats" :disabled="index == 0">∧</button>
+                                        <button @click="status_downward" class="manuever_stats" :disabled="index == other_status.length-1">∨</button>
+                                        <button @click="status_delete" class="manuever_stats">×</button>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="vertical-align: middle;">
+                                <select v-model="select_quick" style="height: 3em; margin-right: 1em;">
+                                    <option value="空行">空行を追加</option>
+                                    <option value="FP自動">「FP」を追加（現在値/最大値を自動入力）</option>
+                                    <option value="FPゼロ">「FP」を追加（現在値/最大値ゼロ）</option>
+                                    <option value="財産点">「財産点」を追加</option>
+                                </select>
+                                <button class="w3-button w3-indigo w3-hover-blue" @click="status_new_line" style="margin-right:1.5em;">
+                                    指定形式で行を増やす
+                                </button>
+                                <p>
+                                    ※<strong class="w3-text-indigo w3-pale-blue" style="padding: 0 0.25em;">「FP」を追加（現在値/最大値を自動入力）</strong>は、今入力されているFP最大値を引用します。追加後にデータを変更しても、追随しません。
+                                </p>
+                                <p>
+                                    ※<strong class="w3-text-indigo w3-pale-blue" style="padding: 0 0.25em;">「FP」を追加（現在値/最大値ゼロ）</strong>は、ダメージをカウントアップする運用を想定した設定です。
+                                </p>
+                                <p>
+                                    ※<strong class="w3-text-indigo w3-pale-blue" style="padding: 0 0.25em;">「財産点」を追加</strong>は、今入力されている【社会】を引用し、現在値・最大値を自動入力します。追加後にデータを変更しても、追随しません。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        キャラクターメモの設定
+                    </div>
+                    <div class="w3-small" style="margin-bottom: 2em;">
+                        <p>「キャラクターメモ」に入れ込む情報を記入してください。</p>
+                        <textarea v-model="memo" cols="40" rows="5"></textarea>
+                        <p>
+                            <span style="margin-right: 1em; font-weight: bold;">「エネミー基本情報」から引用する：</span>
+                            <button v-for="t in ['名称', '外見', '種別', '区分', '備考']" class="w3-button w3-indigo w3-hover-blue" @click="quote_base_info(t)" style="margin-right: 1em;">{{t}}</button>
+                        </p>
+                    </div>
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        チャットパレットの設定
+                    </div>
+                    <div class="w3-small" style="margin: 0 2em;">
+                        <div class="w3-panel w3-pale-blue w3-leftbar w3-border-blue w3-padding-8" v-if="palette_generated" style="font-weight:bold;">
+                            チャットパレットは出力済みです。<br>
+                            内容は、「チャットパレット」タブで編集してください。
+                        </div>
+                        <div class="w3-panel w3-pale-red w3-leftbar w3-border-red w3-padding-8" v-else style="font-weight:bold;">
+                            チャットパレットが出力されていません。<br>
+                            この機能を使うのであれば、先に「チャットパレット」タブで出力を行ってください。
+                        </div>
+                        <div>
+                            <label>
+                                <input type="checkbox" v-model="palette_output" style="margin-right:0.5em;">
+                                チャットパレットを駒データに組み込む
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="w3-panel w3-border w3-round w3-padding-16" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        その他の駒の設定
+                    </div>
+                    <div class="w3-small w3-container w3-padding-8">
+                        <div style="margin-bottom:0.5em;">
+                            <span style="margin-right:1em;">駒のサイズ設定</span>
+                            <input type="number" v-model.number="pone_size" min="1" style="width:4em;">
+                        </div>
+                        <div style="vertical-align: middle; padding:0.3em;">
+                            <label>
+                                <del>
+                                    <input type="checkbox" v-model="active" disabled style="margin-right:0.5em;">
+                                    駒をアクティブ状態で追加する
+                                </del>
+                                <span style="margin-left: 1em;">
+                                    ※現在、ココフォリア Clipboard APIが「非アクティブ状態での駒追加」に対応していません
+                                </span>
+                            </label>
+                        </div>
+                        <div style="vertical-align: middle; padding:0.3em;">
+                            <label>
+                                <input type="checkbox" v-model="secret" style="margin-right:0.5em;">
+                                ステータスを非公開にする
+                            </label>
+                        </div>
+                        <div style="vertical-align: middle; padding:0.3em;">
+                            <label>
+                                <input type="checkbox" v-model="invisible" style="margin-right:0.5em;">
+                                発言時キャラクターを表示しない
+                            </label>
+                        </div>
+                        <div style="vertical-align: middle; padding:0.3em;">
+                            <label>
+                                <input type="checkbox" v-model="hideStatus" style="margin-right:0.5em;">
+                                盤面キャラクター一覧に表示しない
+                            </label>
+                        </div>
+                        <div style="margin-top:1em; display: flex;">
+                            <div>
+                                <div class="w3-panel w3-border w3-round-large w3-padding-8" style="background-color: #454545; vertical-align: middle;">
+                                    <p><strong :style="{color: color}">キャラクター名</strong></p>
+                                    <p style="color: #FFFFFF">チャット画面</p>
+                                </div>
+                                <div class="w3-panel w3-border w3-round-large w3-padding-8" style="background-color: #FFFFFF; vertical-align: middle;">
+                                    <p><strong :style="{'color': color}">キャラクター名：</strong></p>
+                                    <p :style="{'color': color}">出力ログ</p>
+                                </div>
+                            </div>
+                            <div class="w3-panel" style="vertical-align: middle;">
+                                <p>
+                                    <span style="margin-right:1em;">チャットログにおける駒のカラー設定</span>
+                                    <input type="text" class="row2" v-model="color" style="width:12em; margin-right: 1em;">
+                                </p>
+                                <p>
+                                    <div style="margin-right:0em; font-weight:bold;">ココフォリア：色のプリセット（細かくカスタムしたいときは上の数値を直接編集してください）</div>
+                                    <div class="flex_kind" style="width: 25em;">
+                                        <button v-for="i in color_preset" class="colorpick" :key="i" :style="{'background-color':i}" @click="color_pick_button"></button>
+                                    </div>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w3-panel w3-padding-16 w3-border w3-topbar w3-border-indigo bottom_menu" style="margin: 0 2em;">
+                    <div class="w3-border-bottom w3-leftbar w3-border-indigo w3-text-indigo" style="font-weight:bold; padding-left:0.5em;">
+                        駒データの出力
+                    </div>
+                    <div class="w3-container w3-padding-16 w3-small">
+                        <button class="w3-button w3-indigo w3-hover-blue w3-round" @click="output_clip" style="margin-left: 1em;">
+                            駒データを出力する
+                        </button>
+                        <button class="clipboard_button w3-button w3-teal w3-hover-green w3-round" data-clipboard-target="#clipboard_api_output" :disabled="!output_generated" style="margin-left:2em;">
+                            出力した駒データをコピーする
+                        </button>
+                        <button class="clipboard_button w3-button w3-dark-grey w3-hover-light-grey w3-round" @click="output=''" :disabled="!output_generated" style="margin-left:2em;">
+                            出力データのリセット
+                        </button>
+                        <div class="w3-container w3-padding-8 w3-small" v-if="output_generated">
+                            <hr noshade class="w3-border-grey">
+                            <textarea v-model="output" cols="80" rows="5" id="clipboard_api_output"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enemy Editor Section: 旧エディタからのコンバート -->
+        <div id="tab_old_converter">
+
+            <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                JSONファイルから旧エディタのデータを読み込む
+            </div>
+            <form name="form_old_data_load">
+                <label style="margin: 0 2em;">
+                    <div class="w3-button w3-indigo w3-hover-blue">
+                        ファイルを選択
+                    </div>
+                    <input type="file" @change="load_json" id="ee2_old_file_reader">
+                </label>
+                <span style="margin-left:1em;" v-if="message">※{{message}}</span>
+            </form>
+            <div class="w3-panel w3-border w3-padding-4 w3-round w3-small" style="margin: 0 2em;">
+                <p>
+                    ※上のボタンで旧Enemy Editorのデータを読み込むと、「データ入力」の画面に可能な限りそれらのデータを再現します。
+                </p>
+                <p>
+                    なお、旧Enemy Editorから以下の機能は削除されています。ご了承ください。
+                    <ul>
+                        <li>「JSONファイルに保存されたデータからチャットパレット等を出力する機能」（エディタに展開されているデータから出力するように機能変更）</li>
+                        <li>「JSONファイルに、Base64形式で画像を保存する機能」（ユドナリウム駒出力の専用機能に移管）</li>
+                        <li>「印刷レイアウト機能」</li>
+                    </ul>
+                </p>
+            </div>
+        </div>
+
+        <!-- Enemy Editor Section 6: 更新履歴など -->
+        <div id="tab_history">
+            <div class="w3-container">
+                <div class="w3-leftbar w3-border-bottom w3-border-indigo w3-medium ee-title">
+                    更新履歴
+                </div>
+                <p class="w3-small">
+                    バージョン情報の行をクリックすると、詳細を開閉します。
+                </p>
+                <div class="w3-small">
+                    <p class="w3-medium w3-hover-pale-blue history_switch" style="vertical-align: middle;" onClick="history_switch('v0_3_0');">
+                        <span class="w3-badge w3-round w3-padding-4 w3-blue" style="font-weight: bold;">ver 0.3.0</span>
+                        <span class="w3-badge w3-round w3-padding-4 w3-light-grey w3-border" style="font-weight: bold;">2021/7/23</span>
+                        <span>プレリリース</span>
+                    </p>
+                    <ul id="v0_3_0" style="display: block;">
+                        <li>判定一覧に、アーツデータとダメージロール（攻撃）データの「判定値」「命中」が入力されているものを反映する機能を追加
+                            <ul>
+                                <li><span class="w3-pale-blue" style="padding: 0 0.2em;">【】{}［］[] 値</span>の文字を消去し、各能力値の名称を {　} で囲います。</li>
+                                <li>数値または{肉体}など能力値の予約語表記から始まる行のみを、反映の対象とします。</li>
+                                <li>ダメージロールデータの命中欄については、正負の符号から始まる場合に限り、種別欄から「白兵」「射撃」の記載を確認し、能力値を引用します。</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <div class="w3-small">
+                    <p class="w3-medium w3-hover-pale-blue history_switch" style="vertical-align: middle;" onClick="history_switch('v0_2_0');">
+                        <span class="w3-badge w3-round w3-padding-4 w3-blue" style="font-weight: bold;">ver 0.2.0</span>
+                        <span class="w3-badge w3-round w3-padding-4 w3-light-grey w3-border" style="font-weight: bold;">2021/6/23</span>
+                        <span>プレリリース</span>
+                    </p>
+                    <ul id="v0_2_0" style="display: none;">
+                        <li>タブメニューの管理方法を変更</li>
+                        <li>旧Enemy Editorからのデータコンバート機能を追加
+                            <ul>
+                                <li>アーツデータについては、公式のドミニオンアーツと同じ名称で入力されているものはドミニオンアーツ一覧のほうに割り振る。</li>
+                                <li>旧データで「LV表示」にチェックが入っていなかったものは基本的に「LV表示：隠蔽」になる。ただし、ドミニオンアーツ一覧に割り振られたアーツで、最大LVが1のものに限り、自動的に「省略」に変更する。</li>
+                                <li>旧Enemy Editorからオミットされた駒画像関連のデータは無視される。</li>
+                            </ul>
+                        </li>
+                        <li>CDNから読み込むライブラリに対してcrossorigin属性を一応設定</li>
+                    </ul>
+                </div>
+                <div class="w3-small">
+                    <p class="w3-medium w3-hover-pale-blue history_switch" style="vertical-align: middle;" onClick="history_switch('v0_1_0');">
+                        <span class="w3-badge w3-round w3-padding-4 w3-blue" style="font-weight: bold;">ver 0.1.0</span>
+                        <span class="w3-badge w3-round w3-padding-4 w3-light-grey w3-border" style="font-weight: bold;">2021/6/22</span>
+                        <span>プレリリース</span>
+                    </p>
+                    <ul id="v0_1_0" style="display: none;">
+                        <li>旧EnemyEditorをVue.jsを用いてフルリメイク</li>
+                        <li>旧EnemyEditorに比べ、以下機能を追加
+                            <ul>
+                                <li>アーマー値の算出機能を充実</li>
+                                <li>ドミニオンアーツ一覧の枠を通常のアーツ枠と分離し、レベル合計を算出する機能を追加</li>
+                                <li>アーツLVに関する出力設定をアイテム設定と統合</li>
+                                <li>ココフォリア向けの駒出力機能として、Clipboard APIでの駒データ出力を採用し機能追加</li>
+                                <li>Clipboard.jsを用い、出力したテキストをボタンクリックでコピーできるように機能追加</li>
+                            </ul>
+                        </li>
+                        <li>旧EnemyEditorに比べ、以下機能を削除
+                            <ul>
+                                <li>保存するjsonファイルに「画像データを紐付ける」機能を削除（ユドナリウムの駒データ出力の際、都度指定する形に変更）</li>
+                                <li>「保存したjsonファイルのデータを基準に、各種データを出力」する機能を削除（エディタ上のデータのみを参照する形に変更）</li>
+                                <li>印刷レイアウト機能を削除</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <footer class="w3-container w3-dark-grey w3-small" style="padding-top: 1em; text-align: center;">
+            <p style="font-weight:bold; border-bottom: solid 1px #9e9e9e; margin:0 4em 1em 4em; padding-bottom: 0.5em;">
+                Enemy Editor 2 for BEASTBIND TRINITY
+            </p>
+            <p style="border-bottom: solid 1px #9e9e9e; margin:0 4em 1em 4em; padding-bottom: 1em;">
+                Copyright (c) 2021 Yu Krasaka <a href="https://twitter.com/u_krasaka" target="_blank">(Twitter: @u_krasaka)</a>
+            </p>
+            <p>
+                本ツールは、「F.E.A.R.」及び「株式会社KADOKAWA」が権利を有する『ビーストバインド トリニティ』の二次創作物です。<br>
+                (c) 井上純弌、重信康／F.E.A.R.
+            </p>
+        </footer>
+
+    </body>
+    <!-- CDNから読み込むスクリプト -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.js" integrity="sha512-B+gr+zLWg81qxVwvtYwKrmjvQtZKD/GGFF7jD80OfzbqFw+NsbS5faEqpCO7Q7oRw1bYi0+WLJf54j8Vm7NADw==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.js" integrity="sha512-djAJLNukP3WdWmwP/Y05w99aCX6u1jInpshdwiUKbXcQ9y/8BpMtsPsVrVyUbmtEx7wbqFpBq4sGOnIFVScFQQ==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js" crossorigin="anonymous"></script>
+    <!-- Vue.jsと制御用のjavascriptファイル -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.1.1/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+    <!-- <script src="https://unpkg.com/vue@next" crossorigin="anonymous"></script> -->
+    <script src="script/sha256.js"></script>
+    <script src="script/enemyeditor2_ex01_darts_dict.js"></script>
+    <script src="script/enemyeditor2_01_data.js"></script>
+    <script src="script/enemyeditor2_02_chatpalette.js"></script>
+    <script src="script/enemyeditor2_03_udonarium.js"></script>
+    <script src="script/enemyeditor2_04_ccfolia_api.js"></script>
+    <script src="script/enemyeditor2_05_convert.js"></script>
+
+    <script>
+        function history_switch(id) {
+            let sec = document.getElementById(id);
+            sec.style.display = sec.style.display == "none" ? "block" : "none";
+        }
+    </script>
+
+</html>
